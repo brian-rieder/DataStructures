@@ -39,7 +39,7 @@ long * Load_File(char * Filename, int * Size)
   char * strbuffer = malloc(sizeof(char) * MAX_LONG_LEN);
 
   //Get the length of the file (number of long integers)
-  fgets(strbuffer, 12, fp);
+  fgets(strbuffer, MAX_LONG_LEN, fp);
   *Size = atoi(strbuffer);
   
   //Create and prep to write to buffer of long integers
@@ -83,28 +83,36 @@ int Save_File(char * Filename, long * Array, int Size)
   char * strbuffer = malloc(sizeof(char) * MAX_LONG_LEN);
 
   //Convert size to string to put to file
-  sprintf(strbuffer, "%d", Size);
+  sprintf(strbuffer, "%d\n", Size);
   fputs(strbuffer, fp);
 
-  return 0;
+  //Convert each index of array to string and put to file.
+  int i;
+  for(i = 0; i < Size; ++i) {
+    sprintf(strbuffer,"%ld\n", Array[i]);
+    fputs(strbuffer, fp);
+  }
+
+  return 1;
 }
 
 //-----------------------------------------------------------------------------
 
 /*---------------------------------------------------------Shell Insertion Sort
-Function description.
+Takes in an array of long integers (stored in Array) and sorts them in 
+ascending order. The Shell Sort function should use the sequence Seq1.
 
 Input:
-  char * Filename -- the name of a file in the current directory as a
-    string.
-  int Size -- the number of long integers within the file.
-  double * N_Comp -- pointer to store the number of comparisons done within
-    the sorting algorithm.
-  double * N_Move -- pointer to store the number of moves done within the
-    sorting algorithm
+  long * Array -- array of long integers, should be from Seq1 for shell sort.
+  int Size -- the number of integers to be sorted.
+  double * N_Comp -- pointer to store the number of comparisons involving
+    items in Array.
+  double * N_Move -- pointer to store the number of moves involving items in
+    Array.
+  
 
 Output:
-
+  NONE -- void function
 -----------------------------------------------------------------------------*/
 
 void Shell_Insertion_Sort(long * Array, int Size, 
@@ -115,22 +123,23 @@ void Shell_Insertion_Sort(long * Array, int Size,
 //-----------------------------------------------------------------------------
 
 /*---------------------------------------------------------Improved Bubble Sort
-Function description.
+Takes in an array of long integers (stored in Array) and sorts them in 
+ascending order. The Bubble Sort function should use the sequence Seq2.
 
 Input:
-  char * Filename -- the name of a file in the current directory as a
-    string.
-  int Size -- the number of long integers within the file.
-  double * N_Comp -- pointer to store the number of comparisons done within
-    the sorting algorithm.
-  double * N_Move -- pointer to store the number of moves done within the
-    sorting algorithm
+  long * Array -- array of long integers, should be from Seq1 for shell sort.
+  int Size -- the number of integers to be sorted.
+  double * N_Comp -- pointer to store the number of comparisons involving
+    items in Array.
+  double * N_Move -- pointer to store the number of moves involving items in
+    Array.
+  
 
 Output:
-
+  NONE -- void function
 -----------------------------------------------------------------------------*/
 
-void Improved_Bubble_Sort(long * Array, int Size, 
+ void Improved_Bubble_Sort(long * Array, int Size, 
 			  double * N_Comp, double * N_Move)
 {
 }
@@ -182,10 +191,12 @@ int main(int argc, char * * argv)
 {
   int z = 0;
   long * output = Load_File("sample-input.txt", &z);
-  printf("Length of file: %d\n",z);
+  //printf("Length of file: %d\n",z);
   int i;
   for(i = 0; i < z; ++i) {
-    printf("%ld\n",output[i]);
+    //printf("%ld\n",output[i]);
   }
+  Save_File("empty_file.txt", output, z);
+
   return 0;
 }
