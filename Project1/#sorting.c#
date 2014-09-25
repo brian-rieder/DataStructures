@@ -1,0 +1,39 @@
+#include "sorting.h"
+
+/******************************************************************************
+
+ECE 368 Project 1
+
+Name: Brian Rieder
+PUID: brieder
+
+Submission Deadline: October 7th, 2014 at 11:59 PM
+
+ *****************************************************************************/
+
+#define MAX_LONG_LEN 12
+
+/*--------------------------------------------------------------------Load File
+The file contains N+1 integers, one in each line. The first line of the 
+file indicates the number of integers to be sorted, i.e., N. *Size should 
+be assigned the value of N at the end of the routine. The subsequent lines 
+contain (long) integers.
+
+Input: 
+  char * Filename -- the name of a file in the current directory as a
+    string.
+  int * Size -- a return pointer of the number of long integers in the file.
+    It does not need to be initialized to a value.
+
+Output:
+  long * longArr -- array of the long integers within the file
+-----------------------------------------------------------------------------*/
+
+long * Load_File(char * Filename, int * Size)
+{
+  //Open to READ file and zero out any initial size.
+  FILE * fp = fopen(Filename,"r");
+  *Size = 0;
+
+  return 0;
+}

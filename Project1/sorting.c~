@@ -1,0 +1,21 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "sorting.h"
+
+long * Load_File(char * Filename, int * Size)
+{
+  return NULL;
+}
+
+int Save_File(char * Filename, long * Array, int Size);
+{
+  return 0;
+}
+
+void Shell_Insertion_Sort(long * Array, int Size, double * N_Comp, double * N_Move)
+{
+}
+
+void Improved_Bubble_Sort(long * Array, int Size, double * N_Comp, double * N_Move)
+{
+}
