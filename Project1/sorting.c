@@ -11,7 +11,9 @@ Submission Deadline: October 7th, 2014 at 11:59 PM
 
  *****************************************************************************/
 
-#define MAX_LONG_LEN 12
+#define INPUT_FILE "inmine.txt"
+
+#define MAX_LONG_LEN 20
 
 /*--------------------------------------------------------------------Load File
 The file contains N+1 integers, one in each line. The first line of the 
@@ -142,9 +144,51 @@ Output:
   NONE -- void function
 -----------------------------------------------------------------------------*/
 
+//Generates the next value in the sequence
+int gen2val (int num)
+{
+  //Divide value by 1.3
+  int ret = (int)((double)num/1.3);
+
+  //If any value is becomes 9 or 10, it is replaced by 11.
+  if(ret == 9 || ret == 10)
+    ret = 11;
+
+  //Return adjusted value
+  return ret;
+}
+
 void Improved_Bubble_Sort(long * Array, int Size, 
 			  double * N_Comp, double * N_Move)
 {
+  //Initialize variables for traditional bubble sort
+  int i;
+  int tmp;
+  int swapflag = 1;
+
+  //Find our starting gap
+  int gap = gen2val(Size);
+
+  //Outer loop controls size of gap, ends when it is only 1.
+  while(gap != 0) {
+    //Reset swapflag
+    swapflag = 1;
+    //Inner loop is traditional bubble sort with gap compares.
+    while(swapflag) {                    
+      swapflag = 0;                      
+      for(i = gap; i < Size ; ++i) {      
+	if((Array[i - gap] > Array[i]) && (i - gap >= 0)) {  
+	  ++(*N_Comp);
+	  *N_Move += 2;
+	  tmp = Array[i];              
+	  Array[i] = Array[i - gap];          
+	  Array[i - gap] = tmp;             
+	  swapflag = 1;                  
+	}
+      }
+    }
+    gap = gen2val(gap);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -173,6 +217,14 @@ Output:
 // qsort the numbers descending
 // output array to file
 
+int my_pow(int num, int exp)
+{
+  int prod = 1;
+  for(; exp > 0; --exp) {
+    prod *= num;
+  }
+  return prod;
+}
 
 //Puts one integer to a file opened for writing.
 void intToFile(FILE * fp, int n)
@@ -182,15 +234,18 @@ void intToFile(FILE * fp, int n)
   fputs(strbuffer, fp);
 }
 
-//Generates the next value in the sequence
-int gen1val (int num)
+//Generates a value in the sequence
+int gen1val (int p, int q)
 {
-
+  return my_pow(2,p) * my_pow(3,q);
 }
 
-void seq1_Helper(fp, N, -1)
+void seq1_Helper(FILE * fp, int N, int x)
 {
-
+  int generated = 0;
+  while(generated < N) {
+    break; 
+  }
 }
 
 void Save_Seq1 (char *Filename, int N)
@@ -228,20 +283,6 @@ Input:
 Output:
   NONE -- void function
 ------------------------------------------------------------------------------*/
-
-//Generates the next value in the sequence
-int gen2val (int num)
-{
-  //Divide value by 1.3
-  int ret = (int)((double)num/1.3);
-
-  //If any value is becomes 9 or 10, it is replaced by 11.
-  if(ret == 9 || ret == 10)
-    ret = 11;
-
-  //Return adjusted value
-  return ret;
-}
 
 void seq2_Helper (FILE * fp, int N, int prevval)
 {
@@ -289,7 +330,23 @@ int main(int argc, char * * argv)
   Save_File("empty_file.txt", output, z);
   */
 
-  Save_Seq2 ("seq2_output.txt", 50);
+  /* Save_Seq2 ("seq2_output.txt", 50); */
 
+  /* Save_Seq1("seq1_output.txt", 50); */
+
+  int z = 0;
+  double compnum = 0;
+  double movenum = 0;
+  long * array = Load_File(INPUT_FILE, &z);
+  long * orig_array = Load_File(INPUT_FILE, &z);
+  Improved_Bubble_Sort(array, 10, &compnum, &movenum);
+  printf("Original Input:     Final Output:\n");
+  int i;
+  for(i = 0; i < z; ++i) {
+    printf("%14ld%19ld\n",orig_array[i],array[i]);
+  }
+
+  printf("\nIn the process of sorting, we used %f comparisons and %f moves.\n\n",
+	 compnum,movenum);
   return 0;
 }
