@@ -11,9 +11,9 @@ Submission Deadline: October 7th, 2014 at 11:59 PM
 
  *****************************************************************************/
 
-#define INPUT_FILE "inmine.txt"
+#define INPUT_FILE "myrand.txt"
 
-#define MAX_LONG_LEN 20
+#define MAX_LONG_LEN 50
 
 /*--------------------------------------------------------------------Load File
 The file contains N+1 integers, one in each line. The first line of the 
@@ -59,6 +59,18 @@ long * Load_File(char * Filename, int * Size)
   fclose(fp);
   return longArr;
 }
+
+/*
+long * Load_File(char * Filename, int * Size)
+{
+  //Open to READ file and zero out any initial size.
+  FILE * fp = fopen(Filename,"r");
+  *Size = 0;
+
+  //Buffer that will contain strings read from file
+  char * strbuffer = malloc(sizeof(char
+}
+*/
 
 //-----------------------------------------------------------------------------
 
@@ -120,9 +132,34 @@ Output:
   NONE -- void function
 -----------------------------------------------------------------------------*/
 
+//I need to somehow find a way to generate one value...
+
+//Power operation without specific library
+int my_pow(int num, int exp)
+{
+  int prod = 1;
+  for(; exp > 0; --exp) {
+    prod *= num;
+  }
+  return prod;
+}
+
+//Generates a value in the sequence
+int gen1val (int p, int q)
+{
+  return my_pow(2,p) * my_pow(3,q);
+}
+
 void Shell_Insertion_Sort(long * Array, int Size, 
 			  double * N_Comp, double * N_Move)
 {
+  //Initialize iterative variables
+  int i, j, k;
+
+  //Allow gap value to be generated
+  int gap = gen1val(0,0);
+
+  //Outer loop will update gap
 }
 
 //-----------------------------------------------------------------------------
@@ -163,7 +200,7 @@ void Improved_Bubble_Sort(long * Array, int Size,
 {
   //Initialize variables for traditional bubble sort
   int i;
-  int tmp;
+  long tmp;
   int swapflag = 1;
 
   //Find our starting gap
@@ -217,14 +254,7 @@ Output:
 // qsort the numbers descending
 // output array to file
 
-int my_pow(int num, int exp)
-{
-  int prod = 1;
-  for(; exp > 0; --exp) {
-    prod *= num;
-  }
-  return prod;
-}
+
 
 //Puts one integer to a file opened for writing.
 void intToFile(FILE * fp, int n)
@@ -232,12 +262,6 @@ void intToFile(FILE * fp, int n)
   char strbuffer[6];
   sprintf(strbuffer, "%d\n", n);
   fputs(strbuffer, fp);
-}
-
-//Generates a value in the sequence
-int gen1val (int p, int q)
-{
-  return my_pow(2,p) * my_pow(3,q);
 }
 
 void seq1_Helper(FILE * fp, int N, int x)
@@ -317,36 +341,54 @@ void Save_Seq2 (char *Filename, int N)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------TEMPORARY MAIN, PLEASE REMOVE!
+
+int compar(const void * a, const void * b)
+{
+  long aval = *(long*)a;
+  long bval = *(long*)b;
+  if(aval > bval)
+    return 1;
+  if(bval > aval)
+    return -1;
+  return 0;
+}
+
 int main(int argc, char * * argv)
 {
-  /*
-  int z = 0;
-  long * output = Load_File("sample-input.txt", &z);
-  //printf("Length of file: %d\n",z);
-  int i;
-  for(i = 0; i < z; ++i) {
-    //printf("%ld\n",output[i]);
-  }
-  Save_File("empty_file.txt", output, z);
-  */
-
-  /* Save_Seq2 ("seq2_output.txt", 50); */
-
-  /* Save_Seq1("seq1_output.txt", 50); */
-
+  //Initialization of size and execution trackers
   int z = 0;
   double compnum = 0;
   double movenum = 0;
+
+  //Loading comparison and execution arrays
   long * array = Load_File(INPUT_FILE, &z);
   long * orig_array = Load_File(INPUT_FILE, &z);
-  Improved_Bubble_Sort(array, 10, &compnum, &movenum);
-  printf("Original Input:     Final Output:\n");
+
+  //Calling specified sorting function
+  //Improved_Bubble_Sort(array, z, &compnum, &movenum);
+  Shell_Insertion_Sort(array, z, &compnum, &movenum);
+
+  //Display of original input and final output in a pretty format
+  printf("     Original Input:            Final Output:\n");
   int i;
   for(i = 0; i < z; ++i) {
-    printf("%14ld%19ld\n",orig_array[i],array[i]);
+    printf("%20ld%25ld\n",orig_array[i],array[i]);
   }
 
+  //Displaying execution trackers
   printf("\nIn the process of sorting, we used %f comparisons and %f moves.\n\n",
-	 compnum,movenum);
-  return 0;
+  	 compnum,movenum);
+
+  //Printing checker using qsort to sort the orignal array
+  printf("Checking if printing was valid...\n");
+  qsort(orig_array, z, sizeof(long), compar);
+
+  for(i = 0; i < z; ++i) {
+    if(array[i] != orig_array[i]) {
+      printf("The sorting did not work!\n\n");
+      return EXIT_FAILURE;
+    }
+  }
+  printf("Sorting was completed successfully.\n\n");
+  return EXIT_SUCCESS;
 }
