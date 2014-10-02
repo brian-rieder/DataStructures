@@ -210,6 +210,7 @@ void Shell_Insertion_Sort(long * Array, int Size,
       }
     }
   }
+  free(gaparray);
 }
 
 //-----------------------------------------------------------------------------
