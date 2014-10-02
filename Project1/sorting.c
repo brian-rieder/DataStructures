@@ -12,6 +12,7 @@ Submission Deadline: October 7th, 2014 at 11:59 PM
  *****************************************************************************/
 
 #define INPUT_FILE "myrand.txt"
+#define OUTPUT_FILE "output_testing.txt"
 
 #define MAX_LONG_LEN 50
 
@@ -60,18 +61,6 @@ long * Load_File(char * Filename, int * Size)
   return longArr;
 }
 
-/*
-long * Load_File(char * Filename, int * Size)
-{
-  //Open to READ file and zero out any initial size.
-  FILE * fp = fopen(Filename,"r");
-  *Size = 0;
-
-  //Buffer that will contain strings read from file
-  char * strbuffer = malloc(sizeof(char
-}
-*/
-
 //-----------------------------------------------------------------------------
 
 /*--------------------------------------------------------------------Save File
@@ -110,7 +99,7 @@ int Save_File(char * Filename, long * Array, int Size)
   //Clean up memory and return success
   free(strbuffer);
   fclose(fp);
-  return 1;
+  return Size;
 }
 
 //-----------------------------------------------------------------------------
@@ -132,34 +121,95 @@ Output:
   NONE -- void function
 -----------------------------------------------------------------------------*/
 
-//I need to somehow find a way to generate one value...
-
 //Power operation without specific library
-int my_pow(int num, int exp)
+long my_pow(int num, int exp)
 {
-  int prod = 1;
+  long prod = 1;
   for(; exp > 0; --exp) {
     prod *= num;
   }
   return prod;
 }
 
-//Generates a value in the sequence
-int gen1val (int p, int q)
+//qsort comparison function
+int compareSeq1(const void * a, const void * b)
 {
-  return my_pow(2,p) * my_pow(3,q);
+  return(*(int *)b - *(int *)a);
+}
+
+//Takes the size of array and returns an array of the sequence 
+int * gen1seq(int size, int * retSize)
+{
+  //Overtly large array to store values
+  int * seq = malloc(sizeof(int) * size);
+  //Compute the maximum values that the exponents of 2 and 3 can be
+  int largest2exp = size/2;
+  int largest3exp = size/3;
+  //Iterative variable declaration
+  int i, j;
+  int write_pos = 0;
+  long pow2 = 1; //value will be overwritten
+  //Generate appropriate values into array
+  for(i = 0; i < largest2exp; ++i) {
+    if(pow2 <= 0)
+      break;
+    for(j = 0; j < largest3exp; ++j) {
+      pow2 = my_pow(2, i);
+      long pow3 = my_pow(3, j);
+      if(pow2 <= 0 || pow3 >= size || pow2 >= size)
+	break;
+      long long combined = pow2 * pow3;
+      if(combined < size && combined > 0) {
+	seq[write_pos] = combined;
+	++write_pos;
+      }
+    }
+  }
+  //Rewrite to an appropriately sized array
+  int * ret = malloc(sizeof(int) * write_pos);
+  for(i = 0; i < write_pos; ++i)
+    ret[i] = seq[i];
+  free(seq);
+  //Order the sequence in reverse
+  qsort(ret, write_pos, sizeof(int), compareSeq1);
+  //Return reverse sorted sequence
+  *retSize = write_pos;
+  return ret; 
 }
 
 void Shell_Insertion_Sort(long * Array, int Size, 
 			  double * N_Comp, double * N_Move)
 {
-  //Initialize iterative variables
+  //Initialization of iterative and swap variable
   int i, j, k;
+  long tmp;
 
   //Allow gap value to be generated
-  int gap = gen1val(0,0);
+  int arrSize = -1;
+  int * gaparray = gen1seq(Size, &arrSize);
+  int gap;
 
-  //Outer loop will update gap
+  //Outer loop will update gap.
+  for(i = 0; i < arrSize; ++i) {
+    gap = gaparray[i];
+    //Middle loop allows for iteration with a given gap
+    for(j = gap; j < Size; ++j) {
+      //Inner loop facilitates comparisons
+      for(k = j - gap; k >= 0; k = k - gap) {
+	++(*N_Comp);
+	//Checks if we need to update our j iterator (i.e., done swapping)
+	if(Array[k + gap] >= Array[k])
+	  break;
+	//Otherwise we swap current variable and the one a single gap away
+	else {
+	  *N_Move += 2;
+	  tmp = Array[k];
+	  Array[k] = Array[k + gap];
+	  Array[k + gap] = tmp;
+	}
+      }
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -213,9 +263,9 @@ void Improved_Bubble_Sort(long * Array, int Size,
     //Inner loop is traditional bubble sort with gap compares.
     while(swapflag) {                    
       swapflag = 0;                      
-      for(i = gap; i < Size ; ++i) {      
+      for(i = gap; i < Size ; ++i) {  
+	++(*N_Comp);
 	if((Array[i - gap] > Array[i]) && (i - gap >= 0)) {  
-	  ++(*N_Comp);
 	  *N_Move += 2;
 	  tmp = Array[i];              
 	  Array[i] = Array[i - gap];          
@@ -341,7 +391,7 @@ void Save_Seq2 (char *Filename, int N)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------TEMPORARY MAIN, PLEASE REMOVE!
-
+/*
 int compar(const void * a, const void * b)
 {
   long aval = *(long*)a;
@@ -376,8 +426,8 @@ int main(int argc, char * * argv)
   }
 
   //Displaying execution trackers
-  printf("\nIn the process of sorting, we used %f comparisons and %f moves.\n\n",
-  	 compnum,movenum);
+  printf("\nIn the process of sorting, we used %d comparisons and %d moves.\n\n",
+  	 (int)compnum,(int)movenum);
 
   //Printing checker using qsort to sort the orignal array
   printf("Checking if printing was valid...\n");
@@ -390,5 +440,9 @@ int main(int argc, char * * argv)
     }
   }
   printf("Sorting was completed successfully.\n\n");
+
+  Save_File(OUTPUT_FILE, array, z);
+
   return EXIT_SUCCESS;
 }
+*/
