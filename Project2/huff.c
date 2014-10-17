@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 /**************************************************************************
 
@@ -29,6 +30,7 @@ typedef struct stacknode_st {
 
 typedef struct stack_st {
   StackNode * head;
+  int size;
 } Stack;
 
 Node * constructNode(char letter, int weight)
@@ -53,6 +55,7 @@ Stack * constructStack(StackNode * head)
 {
   Stack * s = malloc(sizeof(Stack));
   s->head = head;
+  s->size = 1;
   return(s);
 }
 
@@ -84,11 +87,60 @@ Stack * genTrees(int * asciiArray)
       }
       else {
 	tracker->next = constructSN(constructNode(ind, asciiArray[ind]));
+	++(stack->size);
 	tracker = tracker->next;
       }
     }
   }
   return stack;
+}
+
+void findTwoSmallest(Stack * stack, StackNode * * smallest, StackNode * * secondsmallest)
+{
+  if(stack->size == 1) {
+    printf("Calling findTwoSmallest with insufficient size!\n");
+    assert(1);
+  }
+  if(stack->size == 2) {
+    if(stack->head->tree->weight > stack->head->next->tree->weight) {
+      *smallest = stack->head->next;
+      *secondsmallest = stack->head;
+      return;
+    }
+    *smallest = stack->head;
+    *secondsmallest = stack->head->next;
+    return;
+  }
+  StackNode * ptr = stack->head->next->next;
+  while(ptr != NULL) {
+    if(ptr->tree->weight < (*smallest)->tree->weight)
+      *smallest = ptr;
+    else if(ptr->tree->weight < (*secondsmallest)->tree->weight)
+      *secondsmallest = ptr;
+    ptr = ptr->next;
+  }
+}
+
+StackNode * findPrev(Stack * stack, StackNode * curr)
+{
+  if(stack->size == 1) {
+    printf("Calling findPrev with insufficient stack size!\n");
+    assert(1);
+  }
+  StackNode * ptr = stack->head;
+  while(ptr->next != NULL) {
+    if(ptr->next == curr) 
+      return(ptr);
+    ptr = ptr->next;
+  }
+  printf("Node does not exist within the stack, exiting...\n");
+  assert(1);
+  return NULL;
+}
+
+StackNode * combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
+{
+  return NULL;
 }
 
 int main(int argc, char * * argv)
@@ -111,6 +163,17 @@ int main(int argc, char * * argv)
   Stack * stack = genTrees(asciiChars);
 
   //Order the linked list of trees (aka, the stack)
+  StackNode * smallest;
+  StackNode * secondsmallest;
+  if(stack->head->tree->weight < stack->head->next->tree->weight) {
+    smallest = stack->head;
+    secondsmallest = stack->head->next;
+  }
+  else {
+    smallest = stack->head->next;
+    secondsmallest = stack->head;
+  }
+  findTwoSmallest(stack, &smallest, &secondsmallest); 
 
   return EXIT_FAILURE;
 }
