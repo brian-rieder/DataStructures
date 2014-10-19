@@ -127,6 +127,9 @@ StackNode * findPrev(Stack * stack, StackNode * curr)
     printf("Calling findPrev with insufficient stack size!\n");
     assert(1);
   }
+  if(curr == stack->head) {
+    return NULL;
+  }
   StackNode * ptr = stack->head;
   while(ptr->next != NULL) {
     if(ptr->next == curr) 
@@ -138,9 +141,43 @@ StackNode * findPrev(Stack * stack, StackNode * curr)
   return NULL;
 }
 
-StackNode * combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
+void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
 {
-  return NULL;
+  //Adjust head, if necessary
+  if(node1 == stack->head || node2 == stack->head) {
+    stack->head = stack->head->next;
+    if(node1 == stack->head || node2 == stack->head)
+      stack->head = stack->head->next;
+  }
+
+  //Fixing links to jump over the removed nodes
+  StackNode * prev1 = findPrev(stack, node1);
+  if(prev1 == NULL || prev1 == node2);
+  else {
+    prev1->next = node1->next;
+    node1->next = NULL;
+  }
+  StackNode * prev2 = findPrev(stack, node2);
+  if(prev2 == NULL || prev2 == node2);
+  else {
+    prev2->next = node2->next;
+    node2->next = NULL;
+  }
+
+  //Adjusting weights and values for the new node
+  StackNode * newNode = constructSN(constructNode(node1->tree->letter + node2->tree->letter, 
+						 node1->tree->weight + node2->tree->weight));
+  newNode->tree->left = node1->tree;
+  newNode->tree->right = node2->tree;
+
+  //Get rid of the old node memory
+  free(node1);
+  free(node2);
+
+  //Send back merged node on the front of the stack
+  newNode->next = stack->head;
+  stack->head = newNode;
+  --(stack->size);
 }
 
 int main(int argc, char * * argv)
@@ -174,6 +211,7 @@ int main(int argc, char * * argv)
     secondsmallest = stack->head;
   }
   findTwoSmallest(stack, &smallest, &secondsmallest); 
+  combineAndRemoveOld(stack, smallest, secondsmallest);
 
   return EXIT_FAILURE;
 }
