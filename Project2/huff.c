@@ -113,8 +113,10 @@ void findTwoSmallest(Stack * stack, StackNode * * smallest, StackNode * * second
   }
   StackNode * ptr = stack->head->next->next;
   while(ptr != NULL) {
-    if(ptr->tree->weight < (*smallest)->tree->weight)
+    if(ptr->tree->weight < (*smallest)->tree->weight) {
+      *secondsmallest = *smallest;
       *smallest = ptr;
+    }
     else if(ptr->tree->weight < (*secondsmallest)->tree->weight)
       *secondsmallest = ptr;
     ptr = ptr->next;
@@ -136,32 +138,32 @@ StackNode * findPrev(Stack * stack, StackNode * curr)
       return(ptr);
     ptr = ptr->next;
   }
-  printf("Node does not exist within the stack, exiting...\n");
-  assert(1);
   return NULL;
 }
 
 void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
 {
-  //Adjust head, if necessary
-  if(node1 == stack->head || node2 == stack->head) {
-    stack->head = stack->head->next;
-    if(node1 == stack->head || node2 == stack->head)
+  if(stack->size > 2) {
+    //Adjust head, if necessary
+    if(node1 == stack->head || node2 == stack->head) {
       stack->head = stack->head->next;
-  }
+      if(node1 == stack->head || node2 == stack->head)
+	stack->head = stack->head->next;
+    }
 
-  //Fixing links to jump over the removed nodes
-  StackNode * prev1 = findPrev(stack, node1);
-  if(prev1 == NULL || prev1 == node2);
-  else {
-    prev1->next = node1->next;
-    node1->next = NULL;
-  }
-  StackNode * prev2 = findPrev(stack, node2);
-  if(prev2 == NULL || prev2 == node2);
-  else {
-    prev2->next = node2->next;
-    node2->next = NULL;
+    //Fixing links to jump over the removed nodes
+    StackNode * prev1 = findPrev(stack, node1);
+    if(prev1 == NULL || prev1 == node2);
+    else {
+      prev1->next = node1->next;
+      node1->next = NULL;
+    }
+    StackNode * prev2 = findPrev(stack, node2);
+    if(prev2 == NULL || prev2 == node2);
+    else {
+      prev2->next = node2->next;
+      node2->next = NULL;
+    }
   }
 
   //Adjusting weights and values for the new node
@@ -200,18 +202,25 @@ int main(int argc, char * * argv)
   Stack * stack = genTrees(asciiChars);
 
   //Order the linked list of trees (aka, the stack)
-  StackNode * smallest;
-  StackNode * secondsmallest;
-  if(stack->head->tree->weight < stack->head->next->tree->weight) {
-    smallest = stack->head;
-    secondsmallest = stack->head->next;
+  while(stack->size > 1) {
+    StackNode * smallest;
+    StackNode * secondsmallest;
+    if(stack->head->tree->weight < stack->head->next->tree->weight) {
+      smallest = stack->head;
+      secondsmallest = stack->head->next;
+    }
+    else {
+      smallest = stack->head->next;
+      secondsmallest = stack->head;
+    }
+    findTwoSmallest(stack, &smallest, &secondsmallest); 
+    combineAndRemoveOld(stack, smallest, secondsmallest);
   }
-  else {
-    smallest = stack->head->next;
-    secondsmallest = stack->head;
-  }
-  findTwoSmallest(stack, &smallest, &secondsmallest); 
-  combineAndRemoveOld(stack, smallest, secondsmallest);
+  
+  //Get rid of extraneous freed data after the head
+  stack->head->next = NULL;
 
-  return EXIT_FAILURE;
+  //NOTE: We now have the complete binary tree for the file built!
+
+  return EXIT_SUCCESS;
 }
