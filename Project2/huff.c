@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 /**************************************************************************
@@ -222,5 +223,16 @@ int main(int argc, char * * argv)
 
   //NOTE: We now have the complete binary tree for the file built!
 
+  //Figure out where we're going to write to
+  char * compfilename = malloc(strlen(filename) + strlen(".huff") + 1);
+  strcpy(compfilename, filename);
+  strcat(compfilename, ".huff");
+  FILE * compressedfile = fopen(compfilename, "wb");
+
+  
+
+  //Clean up memory and return success
+  fclose(fp);
+  fclose(compressedfile);
   return EXIT_SUCCESS;
 }
