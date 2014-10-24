@@ -183,6 +183,18 @@ void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
   --(stack->size);
 }
 
+//Utilizes post-order traversal
+void treeToHeaderString(char * headerstring, Node * huffTree)
+{
+  if(huffTree == NULL) {
+    //We're at a letter node...
+    return;
+  }
+  treeToHeaderString(headerstring, huffTree->left);
+  treeToHeaderString(headerstring, huffTree->right);
+
+}
+
 int main(int argc, char * * argv)
 {
   //Program accepts one argument, the name of the input file
@@ -222,6 +234,7 @@ int main(int argc, char * * argv)
   stack->head->next = NULL;
 
   //NOTE: We now have the complete binary tree for the file built!
+  Node * huffTree = stack->head->tree;
 
   //Figure out where we're going to write to
   char * compfilename = malloc(strlen(filename) + strlen(".huff") + 1);
@@ -229,7 +242,9 @@ int main(int argc, char * * argv)
   strcat(compfilename, ".huff");
   FILE * compressedfile = fopen(compfilename, "wb");
 
-  
+  //Store the header information into a string
+  char headerstring[512] = {};
+  treeToHeaderString(headerstring, huffTree); 
 
   //Clean up memory and return success
   fclose(fp);
