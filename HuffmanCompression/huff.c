@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+
+#define FATAL(msg) {							\
+    fprintf(stderr, "FATAL %s:%d %s\n", __FILE__, (int) __LINE__, msg); \
+    exit(1);								\
+  }
 
 /**************************************************************************
 
@@ -58,6 +62,97 @@ Stack * constructStack(StackNode * head)
   s->head = head;
   s->size = 1;
   return(s);
+}
+
+/**************************************************************************
+
+Bitfile Manipulation -- similar to unhuff!
+
+ **************************************************************************/
+
+typedef struct BitFile_st
+{
+  FILE * fp;
+  unsigned char byte; // Current byte being processed
+  int offset;         // offset into current byte gives the current bit
+} BitFile;
+
+BitFile * BitFile_create(FILE * fp)
+{
+  BitFile * bp = malloc(sizeof(BitFile));
+  bp->fp = fp;
+  bp->byte = 0;
+  bp->offset = 8; // The next read will trigger init of byte
+  return bp;
+}
+
+void BitFile_destroy(BitFile * bp)
+{
+  if(bp != NULL)
+    free(bp);
+}
+
+/**
+ * Return 0 or 1, as per the next bit in the file
+ * Return -1 if there are no more bits in the file
+ * 'byte' is the current byte being processed
+ * 'bitcounter' is the offset within byte for the current bit
+ */
+int BitFile_nextBit(BitFile * bf)
+{
+  if(bf->offset == 8) {
+    bf->offset = 0;
+    if(fread(&(bf->byte), sizeof(unsigned char), 1, bf->fp) != 1)
+      return -1; // we're out of bits
+  }
+  return ((bf->byte) >> (7 - (bf->offset++))) & 0x01;
+}
+
+void BitFile_writeBit(char c, BitFile * bf)
+{
+  if(bf->offset == 8) {
+    bf->offset = 0;
+    fwrite(&(bf->byte), sizeof(unsigned char), 1, bf->fp);
+  }
+  if(c == '1') {
+    bf->byte |= (0x80 >> (bf->offset++));
+  }
+  else { //c == '0'
+    if(bf->offset == 0)
+      bf->byte &= 0x7F;
+    else if(bf->offset == 1)
+      bf->byte &= 0xBF;
+    else if(bf->offset == 2)
+      bf->byte &= 0xDF;
+    else if(bf->offset == 3)
+      bf->byte &= 0xEF;
+    else if(bf->offset == 4)
+      bf->byte &= 0xF7;
+    else if(bf->offset == 5)
+      bf->byte &= 0xFB;
+    else if(bf->offset == 6)
+      bf->byte &= 0xFD;
+    else if(bf->offset == 7)
+      bf->byte &= 0xFE;
+  }
+}
+
+int BitFile_nextByte(BitFile * bf)
+{
+  int ret = 0;
+  int offset;
+  for(offset = 0; offset < 8; ++offset) {
+    int bit = BitFile_nextBit(bf);
+    if(bit < 0)
+      return -1; // we're out of bits
+    ret = ret | (bit << (7-offset));
+  }
+  return ret;
+}
+
+void BitFile_writeByte(char c, BitFile * bf)
+{
+
 }
 
 /**************************************************************************
@@ -126,7 +221,6 @@ StackNode * findPrev(Stack * stack, StackNode * curr)
 {
   if(stack->size == 1) {
     FATAL("Calling findPrev with insufficient stack size!");
-    assert(1);
   }
   if(curr == stack->head) {
     return NULL;
@@ -187,10 +281,43 @@ void treeToHeaderString(char * * headerstring, Node * huffTree)
   if(huffTree == NULL) {
     return;
   }
+
   treeToHeaderString(headerstring, huffTree->left);
   treeToHeaderString(headerstring, huffTree->right);
-  //We've checked the leaves, now put a zero
+
+  if(huffTree->left != NULL && huffTree->right != NULL) {
+    //Non-leaf node, so put a 0 and go home
+    strcat(*headerstring, "0");
+  }
+  else {
+    //Leaf node, so put a 1 followed by the node's character
+    strcat(*headerstring, "1");
+    strcat(*headerstring, &(huffTree->letter));
+  }
   
+}
+
+void writeHeaderToFile(FILE * fp, char * headerstring)
+{
+  int i;
+  BitFile * bp = BitFile_create(fp);
+  for(i = 0; i < strlen(headerstring); ++i) {
+    char c = headerstring[i];
+    if(c == '1') {
+      //write the 1 bit, then the byte
+      BitFile_writeBit('1', bp);
+      BitFile_writeByte(headerstring[i + 1], bp);
+      ++i;
+    }
+    else if(c == '0') {
+      //write the 0 bit, no increment necessary
+      BitFile_writeBit('0', bp);
+    }
+    else {
+      //something went wrong, kill it...
+      FATAL("Invalid character in the header string.");
+    }
+  } 
 }
 
 int main(int argc, char * * argv)
@@ -242,7 +369,14 @@ int main(int argc, char * * argv)
 
   //Store the header information into a string
   char * headerstring = malloc(sizeof(char) * 512);
-  treeToHeaderString(&headerstring, huffTree); 
+  treeToHeaderString(&headerstring, huffTree);
+  
+  //NOTE: We now have the header data stored into a string!
+
+  //Write the header in binary to the file
+  writeHeaderToFile(fp, headerstring);
+
+  //Find a way to check if write bit is working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   //Clean up memory and return success
   fclose(fp);

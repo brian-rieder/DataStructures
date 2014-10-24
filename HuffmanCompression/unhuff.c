@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -272,13 +271,20 @@ int main(int argc, char * * argv)
   size_t len;
   unsigned char * output = Huffman_applyTree(fp, huffTree, &len);
 
-  //Prints to command line... need to fprintf to appended filename after debugging!
-  printf("\nMessage is:\n%s\n", output);
+  //Figure out where we're going to write to
+  char * decompfilename = malloc(strlen(filename) + strlen(".unhuff") + 1);
+  strcpy(decompfilename, filename);
+  strcat(decompfilename, ".unhuff");
+  FILE * decompressedfile = fopen(decompfilename, "w");
 
+  //Print output to appended filename to get back the original file!
+  fprintf(decompressedfile, "%s", output);
   
   //Clean up memory
   fclose(fp);
+  fclose(decompressedfile);
   HuffNode_destroy(huffTree);
+  free(decompfilename);
   free(output);
 
   return EXIT_SUCCESS;
