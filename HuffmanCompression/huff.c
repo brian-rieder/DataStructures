@@ -98,10 +98,8 @@ Stack * genTrees(int * asciiArray)
 
 void findTwoSmallest(Stack * stack, StackNode * * smallest, StackNode * * secondsmallest)
 {
-  if(stack->size == 1) {
-    printf("Calling findTwoSmallest with insufficient size!\n");
-    assert(1);
-  }
+  if(stack->size == 1)
+    FATAL("Calling findTwoSmallest with insufficient size!");
   if(stack->size == 2) {
     if(stack->head->tree->weight > stack->head->next->tree->weight) {
       *smallest = stack->head->next;
@@ -127,7 +125,7 @@ void findTwoSmallest(Stack * stack, StackNode * * smallest, StackNode * * second
 StackNode * findPrev(Stack * stack, StackNode * curr)
 {
   if(stack->size == 1) {
-    printf("Calling findPrev with insufficient stack size!\n");
+    FATAL("Calling findPrev with insufficient stack size!");
     assert(1);
   }
   if(curr == stack->head) {
@@ -243,7 +241,7 @@ int main(int argc, char * * argv)
   FILE * compressedfile = fopen(compfilename, "wb");
 
   //Store the header information into a string
-  char headerstring[512] = {};
+  char * headerstring = malloc(sizeof(char) * 512);
   treeToHeaderString(&headerstring, huffTree); 
 
   //Clean up memory and return success
