@@ -184,15 +184,15 @@ void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
 }
 
 //Utilizes post-order traversal
-void treeToHeaderString(char * headerstring, Node * huffTree)
+void treeToHeaderString(char * * headerstring, Node * huffTree)
 {
   if(huffTree == NULL) {
-    //We're at a letter node...
     return;
   }
   treeToHeaderString(headerstring, huffTree->left);
   treeToHeaderString(headerstring, huffTree->right);
-
+  //We've checked the leaves, now put a zero
+  
 }
 
 int main(int argc, char * * argv)
@@ -244,7 +244,7 @@ int main(int argc, char * * argv)
 
   //Store the header information into a string
   char headerstring[512] = {};
-  treeToHeaderString(headerstring, huffTree); 
+  treeToHeaderString(&headerstring, huffTree); 
 
   //Clean up memory and return success
   fclose(fp);
