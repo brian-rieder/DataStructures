@@ -82,7 +82,7 @@ BitFile * BitFile_create(FILE * fp)
   BitFile * bp = malloc(sizeof(BitFile));
   bp->fp = fp;
   bp->byte = 0;
-  bp->offset = 8; // The next read will trigger init of byte
+  bp->offset = 0; // The next read will trigger init of byte
   return bp;
 }
 
@@ -92,28 +92,8 @@ void BitFile_destroy(BitFile * bp)
     free(bp);
 }
 
-/**
- * Return 0 or 1, as per the next bit in the file
- * Return -1 if there are no more bits in the file
- * 'byte' is the current byte being processed
- * 'bitcounter' is the offset within byte for the current bit
- */
-int BitFile_nextBit(BitFile * bf)
-{
-  if(bf->offset == 8) {
-    bf->offset = 0;
-    if(fread(&(bf->byte), sizeof(unsigned char), 1, bf->fp) != 1)
-      return -1; // we're out of bits
-  }
-  return ((bf->byte) >> (7 - (bf->offset++))) & 0x01;
-}
-
 void BitFile_writeBit(char c, BitFile * bf)
 {
-  if(bf->offset == 8) {
-    bf->offset = 0;
-    fwrite(&(bf->byte), sizeof(unsigned char), 1, bf->fp);
-  }
   if(c == '1') {
     bf->byte |= (0x80 >> (bf->offset++));
   }
@@ -134,25 +114,33 @@ void BitFile_writeBit(char c, BitFile * bf)
       bf->byte &= 0xFD;
     else if(bf->offset == 7)
       bf->byte &= 0xFE;
+    ++(bf->offset);
   }
-}
-
-int BitFile_nextByte(BitFile * bf)
-{
-  int ret = 0;
-  int offset;
-  for(offset = 0; offset < 8; ++offset) {
-    int bit = BitFile_nextBit(bf);
-    if(bit < 0)
-      return -1; // we're out of bits
-    ret = ret | (bit << (7-offset));
+  if(bf->offset == 8) {
+    bf->offset = 0;
+    fwrite(&(bf->byte), sizeof(unsigned char), 1, bf->fp);
   }
-  return ret;
 }
 
 void BitFile_writeByte(char c, BitFile * bf)
-{
+{ 
+  char bit1 = ((0x80 & c) >> 7) + '0';
+  char bit2 = ((0x40 & c) >> 6) + '0';
+  char bit3 = ((0x20 & c) >> 5) + '0';
+  char bit4 = ((0x10 & c) >> 4) + '0';
+  char bit5 = ((0x08 & c) >> 3) + '0';
+  char bit6 = ((0x04 & c) >> 2) + '0';
+  char bit7 = ((0x02 & c) >> 1) + '0';
+  char bit8 = (0x01 & c) + '0';
 
+  BitFile_writeBit(bit1, bf);
+  BitFile_writeBit(bit2, bf);
+  BitFile_writeBit(bit3, bf);
+  BitFile_writeBit(bit4, bf);
+  BitFile_writeBit(bit5, bf);
+  BitFile_writeBit(bit6, bf);
+  BitFile_writeBit(bit7, bf);
+  BitFile_writeBit(bit8, bf);  
 }
 
 /**************************************************************************
@@ -297,7 +285,7 @@ void treeToHeaderString(char * * headerstring, Node * huffTree)
   
 }
 
-void writeHeaderToFile(FILE * fp, char * headerstring)
+BitFile * writeHeaderToFile(FILE * fp, char * headerstring)
 {
   int i;
   BitFile * bp = BitFile_create(fp);
@@ -317,7 +305,36 @@ void writeHeaderToFile(FILE * fp, char * headerstring)
       //something went wrong, kill it...
       FATAL("Invalid character in the header string.");
     }
-  } 
+  }
+  //Write an extra 0 and then the header length
+  BitFile_writeBit('0', bp);
+  fputc('1', bp->fp);
+  fputc('3', bp->fp);
+  //Newline coup-de-grace!
+  fputc('\n', bp->fp);
+
+  return bp;
+}
+
+ void writeDataToString(BitFile * compfile, FILE * fp)
+ {
+   while(!feof(fp)) {
+     //Get a letter from the unencoded file
+     char c = fgetc(fp);
+
+     //Transform character into its compressed bit pattern
+     
+
+     //Write compressed bit pattern to compressed file
+     
+
+     //Finished with this character, let's move to the next
+   }
+ }
+
+void writeDataToFile(datastring, bf)
+{
+
 }
 
 int main(int argc, char * * argv)
@@ -374,11 +391,17 @@ int main(int argc, char * * argv)
   //NOTE: We now have the header data stored into a string!
 
   //Write the header in binary to the file
-  writeHeaderToFile(fp, headerstring);
+  BitFile * bf = writeHeaderToFile(compressedfile, headerstring);
+  free(headerstring);
 
-  //Find a way to check if write bit is working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  //Write encoded data to file!
+  rewind(fp);
+  char * datastring = malloc(sizeof(char) * 2048);
+  writeDataToString(datastring, fp, huffTree);
+  writeDataToFile(datastring, bf);
+ 
   //Clean up memory and return success
+  free(datastring);
   fclose(fp);
   fclose(compressedfile);
   return EXIT_SUCCESS;
