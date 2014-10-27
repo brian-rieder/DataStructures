@@ -242,7 +242,12 @@ void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
     StackNode * prev2 = findPrev(stack, node2);
     if(prev2 == NULL || prev2 == node2);
     else {
-      prev2->next = node2->next;
+      if(node2->next == node1) {
+	prev2->next = node1->next;
+      }
+      else{
+	prev2->next = node2->next;
+      }
       node2->next = NULL;
     }
   }
