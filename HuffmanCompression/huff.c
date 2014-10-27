@@ -254,7 +254,9 @@ void combineAndRemoveOld(Stack * stack, StackNode * node1, StackNode * node2)
   newNode->tree->right = node2->tree;
 
   //Get rid of the old node memory
+  node1 = NULL;
   free(node1);
+  node2 = NULL;
   free(node2);
 
   //Send back merged node on the front of the stack
@@ -285,7 +287,7 @@ void treeToHeaderString(char * * headerstring, Node * huffTree)
   
 }
 
-BitFile * writeHeaderToFile(FILE * fp, char * headerstring)
+BitFile * writeHeaderToFile(FILE * fp, char * headerstring, int filelen)
 {
   int i;
   BitFile * bp = BitFile_create(fp);
@@ -306,36 +308,82 @@ BitFile * writeHeaderToFile(FILE * fp, char * headerstring)
       FATAL("Invalid character in the header string.");
     }
   }
+  //Clean up the last byte
+  while(bp->offset != 7) {
+    BitFile_writeBit('0', bp);
+  }
+
   //Write an extra 0 and then the header length
   BitFile_writeBit('0', bp);
-  fputc('1', bp->fp);
-  fputc('3', bp->fp);
+  
+  //fputc('1', bp->fp);
+  //fputc('3', bp->fp);
+  char lendigit[200];
+  sprintf(lendigit, "%d", filelen);
+  for(i = 0; i < strlen(lendigit); ++i) {
+    fputc(lendigit[i], bp->fp);
+  }
   //Newline coup-de-grace!
   fputc('\n', bp->fp);
 
   return bp;
 }
 
- void writeDataToString(BitFile * compfile, FILE * fp)
+void determineLetterCode(char * bitpattern, char letter, Node * huffTree, int ind, char * * f)
+{
+  if(*f == NULL)
+    return;
+  if(huffTree == NULL)
+    return;
+  if((huffTree->letter == letter) && (huffTree->left == NULL) && (huffTree->right == NULL)) {
+    bitpattern[ind] = '\0';
+    *f = NULL;
+    return;
+  }
+
+  bitpattern[ind] = '0';
+  ++ind;
+  determineLetterCode(bitpattern, letter, huffTree->left, ind, f);
+  if(*f == NULL || bitpattern[ind] == '\0') {
+    *f = NULL;
+    return;
+  }
+  else
+    --ind;
+  bitpattern[ind] = '1';
+  ++ind;
+  determineLetterCode(bitpattern, letter, huffTree->right, ind, f);
+  if(*f == NULL || bitpattern[ind] == '\0') {
+    *f = NULL;
+  }
+}
+
+void writeDataToFile(BitFile * compfile, FILE * fp, Node * huffTree)
  {
+   char * bitpattern = malloc(sizeof(char) * 100);
    while(!feof(fp)) {
      //Get a letter from the unencoded file
      char c = fgetc(fp);
 
+     //Clear out any potential previous bit pattern
+     int i = 0;
+     while(i < 100) {
+       bitpattern[i++] = 'X';
+     }
+
      //Transform character into its compressed bit pattern
-     
+     char * flag = "";
+     determineLetterCode(bitpattern, c, huffTree, 0, &flag);
 
      //Write compressed bit pattern to compressed file
-     
+     for(i = 0; i < strlen(bitpattern); ++i) {
+       BitFile_writeBit(bitpattern[i], compfile);
+     }
 
      //Finished with this character, let's move to the next
    }
+   free(bitpattern);
  }
-
-void writeDataToFile(datastring, bf)
-{
-
-}
 
 int main(int argc, char * * argv)
 {
@@ -348,6 +396,14 @@ int main(int argc, char * * argv)
 
   //Load the info from the file
   FILE * fp = fopen(filename, "r");
+
+  //Determine the length of the file
+  int filelen = 0;
+  while(!feof(fp)) {
+    fgetc(fp);
+    ++filelen;
+  }
+  rewind(fp);
 
   //Count characters and assign weights in an integer array
   int asciiChars[128] = {};
@@ -391,17 +447,15 @@ int main(int argc, char * * argv)
   //NOTE: We now have the header data stored into a string!
 
   //Write the header in binary to the file
-  BitFile * bf = writeHeaderToFile(compressedfile, headerstring);
+  BitFile * bf = writeHeaderToFile(compressedfile, headerstring, filelen);
   free(headerstring);
 
   //Write encoded data to file!
   rewind(fp);
-  char * datastring = malloc(sizeof(char) * 2048);
-  writeDataToString(datastring, fp, huffTree);
-  writeDataToFile(datastring, bf);
- 
+  writeDataToFile(bf, fp, huffTree);
+  //fputc(0xEE, bf->fp);
+
   //Clean up memory and return success
-  free(datastring);
   fclose(fp);
   fclose(compressedfile);
   return EXIT_SUCCESS;
