@@ -277,6 +277,9 @@ int main(int argc, char * * argv)
   strcat(decompfilename, ".unhuff");
   FILE * decompressedfile = fopen(decompfilename, "w");
 
+  //Remove extra character from extraneous byte
+  output[strlen((char*)output) - 1] = '\0';
+
   //Print output to appended filename to get back the original file!
   fprintf(decompressedfile, "%s", output);
   

@@ -321,8 +321,6 @@ BitFile * writeHeaderToFile(FILE * fp, char * headerstring, int filelen)
   //Write an extra 0 and then the header length
   BitFile_writeBit('0', bp);
   
-  //fputc('1', bp->fp);
-  //fputc('3', bp->fp);
   char lendigit[200];
   sprintf(lendigit, "%d", filelen);
   for(i = 0; i < strlen(lendigit); ++i) {
@@ -364,31 +362,31 @@ void determineLetterCode(char * bitpattern, char letter, Node * huffTree, int in
 }
 
 void writeDataToFile(BitFile * compfile, FILE * fp, Node * huffTree)
- {
-   char * bitpattern = malloc(sizeof(char) * 100);
-   while(!feof(fp)) {
-     //Get a letter from the unencoded file
-     char c = fgetc(fp);
+{
+  char * bitpattern = malloc(sizeof(char) * 100);
 
-     //Clear out any potential previous bit pattern
-     int i = 0;
-     while(i < 100) {
-       bitpattern[i++] = 'X';
-     }
+  while(!feof(fp)) {
+    //Get a letter from the unencoded file
+    char c = fgetc(fp);
 
-     //Transform character into its compressed bit pattern
-     char * flag = "";
-     determineLetterCode(bitpattern, c, huffTree, 0, &flag);
+    //Clear out any potential previous bit pattern
+    int i = 0;
+    while(i < 100) {
+      bitpattern[i++] = 'X';
+    }
 
-     //Write compressed bit pattern to compressed file
-     for(i = 0; i < strlen(bitpattern); ++i) {
-       BitFile_writeBit(bitpattern[i], compfile);
-     }
+    //Transform character into its compressed bit pattern
+    char * flag = "";
+    determineLetterCode(bitpattern, c, huffTree, 0, &flag);
 
-     //Finished with this character, let's move to the next
-   }
-   free(bitpattern);
- }
+    //Write compressed bit pattern to compressed file
+    for(i = 0; i < strlen(bitpattern); ++i) {
+      BitFile_writeBit(bitpattern[i], compfile);
+    }
+    //Finished with this character, let's move to the next
+  }
+  free(bitpattern);
+}
 
 int main(int argc, char * * argv)
 {
@@ -458,7 +456,6 @@ int main(int argc, char * * argv)
   //Write encoded data to file!
   rewind(fp);
   writeDataToFile(bf, fp, huffTree);
-  //fputc(0xEE, bf->fp);
 
   //Clean up memory and return success
   fclose(fp);
