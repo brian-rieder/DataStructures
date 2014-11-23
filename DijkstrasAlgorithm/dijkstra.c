@@ -30,6 +30,7 @@ typedef struct edgelist_t {
 
 typedef struct node_t {
   int value;
+  unsigned long weight;
   int xcoord;
   int ycoord;
   EdgeList * edges;
@@ -102,7 +103,7 @@ void insertConnection(Node * vertex, int firstnode, int secondnode)
 int main(int argc, char * * argv)
 {
   //Verify that the correct number of arguments is given
-  if(argc != 2)
+  if(argc != 3)
     FATAL("Invalid number of command line arguments!");
   //Open the map file for reading
   FILE * map = fopen(argv[1], "r");
@@ -130,7 +131,13 @@ int main(int argc, char * * argv)
     int secondnode = readNumberFromFile(map);
     insertConnection(vertex, firstnode, secondnode);
   }
+  fclose(map);
   //NOTE: At this point, the graph is complete, so begin algorithm
+  //Open the query file for reading
+  FILE * query = fopen(argv[2], "r");
+  //Read the number of queries
+  int numQueries = readNumberFromFile(query);
+  //Read query data and store it for reference
 
   return EXIT_SUCCESS;
 }
