@@ -59,6 +59,7 @@ Node * nodeConstructor(int nodeValue, int nodeXcoord, int nodeYcoord)
 {
   Node * retnode = malloc(sizeof(Node));
   retnode->value = nodeValue;
+  retnode->weight = 4294967295;
   retnode->xcoord = nodeXcoord;
   retnode->ycoord = nodeYcoord;
   retnode->edges = NULL;
@@ -100,6 +101,55 @@ void insertConnection(Node * vertex, int firstnode, int secondnode)
   }
 }
 
+int * readQueries(FILE * query, int numQueries)
+{
+  int i;
+  int * retArr = malloc(sizeof(int) * 2 * numQueries);
+  for(i = 0; i < (2 * numQueries); ++i) {
+    retArr[i] = readNumberFromFile(query);
+  }
+  return retArr;
+}
+
+Node * findVertexByValue(int searchValue, Node * origin)
+{
+  while(origin != NULL) {
+    if(origin->value == searchValue)
+      return origin;
+    origin = origin->next;
+  }
+  FATAL("Attempted to search for non-existent vertex!");
+  return NULL;
+}
+
+int squareroot(int num)
+{
+  int val;
+  if(num == 0)
+    return 0;
+  if(num == 1)
+    return 1;
+  int i;
+  for(i = 1; i < num/2; ++i) {
+    if(i * i > num)
+      break;
+    val = i;
+  }
+  return val;
+}
+
+int square(int num)
+{
+  return(num * num);
+}
+
+int distanceFormula(Node * node1, Node * node2)
+{
+  //d = sqrt((x2 - x1)^2 + (y2 - y1)^2)
+  return(squareroot(square(node1->xcoord - node2->xcoord) + 
+		    square(node1->ycoord - node2->ycoord)));
+}
+
 int main(int argc, char * * argv)
 {
   //Verify that the correct number of arguments is given
@@ -138,6 +188,16 @@ int main(int argc, char * * argv)
   //Read the number of queries
   int numQueries = readNumberFromFile(query);
   //Read query data and store it for reference
+  int * queryArr = readQueries(query, numQueries);
+  //Store origin node in list
+  Node * origin = vertex;
+  //There may need to be a loop here
+  //Find the starting point of the query
+  i=0;
+  int startVal = queryArr[i];
+  int endVal = queryArr[i+1];
+  Node * start = findVertexByValue(startVal, origin);
+
 
   return EXIT_SUCCESS;
 }
