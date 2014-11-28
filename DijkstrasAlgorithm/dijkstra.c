@@ -129,6 +129,7 @@ Node * findVertexByValue(int searchValue, Node * origin)
       return origin;
     origin = origin->next;
   }
+  printf("Searched Value: %d\n", searchValue);
   FATAL("Attempted to search for non-existent vertex!");
   return NULL;
 }
@@ -212,6 +213,41 @@ ResultList * reslistConstructor(int value)
   return ret;
 }
 
+void edgelistDestroy(EdgeList * edges)
+{
+  if(edges == NULL)
+    return;
+  edgelistDestroy(edges->next);
+  free(edges);
+}
+
+void nodeDestroy(Node * node)
+{
+  if(node == NULL)
+    return;
+  nodeDestroy(node->next);
+  edgelistDestroy(node->edges);
+  free(node);
+}
+
+void reslistDestroy(ResultList * reslist)
+{
+  if(reslist == NULL)
+    return;
+  reslistDestroy(reslist->next);
+  free(reslist);
+}
+
+void resetGraph(Node * node)
+{
+  if(node == NULL)
+    return;
+  resetGraph(node->next);
+  node->weight = PSEUDOINF;
+  node->prev = -1;
+  node->ingraph = 1;
+}
+
 int main(int argc, char * * argv)
 {
   //Verify that the correct number of arguments is given
@@ -253,45 +289,50 @@ int main(int argc, char * * argv)
   int * queryArr = readQueries(query, numQueries);
   //Store origin node in list
   Node * origin = vertex;
-  //There may need to be a loop here
-  //Find the starting point of the query
-  i=0;
-  int startVal = queryArr[i];
-  int endVal = queryArr[i+1];
-  Node * start = findVertexByValue(startVal, origin);
-  Node * end = findVertexByValue(endVal, origin);
-  start->weight = 0;
-  while(areAllNotRemoved(origin)) {
-    //Set the weight check to find minimum node
-    Node * itrNode = findLowestNode(origin);
-    //Make sure we're not done
-    if(itrNode->value == endVal)
-      break;
-    //Update weights for adjacent nodes
-    updateAdjacentWeights(itrNode, origin);
+  //Loop through the queries
+  for(i = 0; i < (numQueries * 2); i += 2) {
+    //Find the starting point of the query
+    int startVal = queryArr[i];
+    int endVal = queryArr[i+1];
+    Node * start = findVertexByValue(startVal, origin);
+    Node * end = findVertexByValue(endVal, origin);
+    start->weight = 0;
+    while(areAllNotRemoved(origin)) {
+      //Set the weight check to find minimum node
+      Node * itrNode = findLowestNode(origin);
+      //Make sure we're not done
+      if(itrNode->value == endVal)
+	break;
+      //Update weights for adjacent nodes
+      updateAdjacentWeights(itrNode, origin);
+    }
+    if(end->weight == PSEUDOINF)
+      FATAL("Final node weight was not updated!");
+    //Produce the result list
+    ResultList * results = reslistConstructor(end->value);
+    Node * before = findVertexByValue(end->prev, origin);
+    while(before->value != startVal) {
+      ResultList * pinonfront = reslistConstructor(before->value);
+      pinonfront->next = results;
+      results = pinonfront;
+      before = findVertexByValue(before->prev, origin);
+    }
+    //Print the final results
+    printf("%ld\n", end->weight);
+    ResultList * printitr = results;
+    while(printitr != NULL) {
+      printf("%d ", printitr->value);
+      printitr = printitr->next;
+    }
+    printf("\n");
+    reslistDestroy(results);
+    resetGraph(origin);
   }
-  if(end->weight == PSEUDOINF)
-    FATAL("Final node weight was not updated!");
-  //Produce the result list
-  ResultList * results = reslistConstructor(end->value);
-  Node * before = findVertexByValue(end->prev, origin);
-  while(before->value != startVal) {
-    ResultList * pinonfront = reslistConstructor(before->value);
-    pinonfront->next = results;
-    results = pinonfront;
-    before = findVertexByValue(before->prev, origin);
-  }
-  //Print the final results
-  printf("%ld\n", end->weight);
-  ResultList * printitr = results;
-  while(printitr != NULL) {
-    printf("%d ", printitr->value);
-    printitr = printitr->next;
-  }
-  printf("\n");
 
   //Free used memory
   fclose(query);
+  free(queryArr);
+  nodeDestroy(origin);
 
   return EXIT_SUCCESS;
 }
