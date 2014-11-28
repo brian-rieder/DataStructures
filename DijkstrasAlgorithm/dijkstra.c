@@ -7,6 +7,8 @@
     exit(1);								\
   }
 
+#define PSEUDOINF 4294967295
+
 /********************************************************************
  * ECE368 Project 3
  *
@@ -35,7 +37,14 @@ typedef struct node_t {
   int ycoord;
   EdgeList * edges;
   struct node_t * next;
+  int prev;
+  int ingraph;
 } Node;
+
+typedef struct reslist_t {
+  int value;
+  struct reslist_t * next;
+} ResultList;
 
 //-------------------------------------------------------Program Body
 
@@ -59,11 +68,13 @@ Node * nodeConstructor(int nodeValue, int nodeXcoord, int nodeYcoord)
 {
   Node * retnode = malloc(sizeof(Node));
   retnode->value = nodeValue;
-  retnode->weight = 4294967295;
+  retnode->weight = PSEUDOINF;
   retnode->xcoord = nodeXcoord;
   retnode->ycoord = nodeYcoord;
   retnode->edges = NULL;
   retnode->next = NULL;
+  retnode->prev = -1;
+  retnode->ingraph = 1;
   return retnode;
 }
 
@@ -150,6 +161,57 @@ int distanceFormula(Node * node1, Node * node2)
 		    square(node1->ycoord - node2->ycoord)));
 }
 
+void updateAdjacentWeights(Node * internal, Node * origin)
+{
+  EdgeList * tmp = internal->edges;
+  while(tmp != NULL) {
+    Node * hld = findVertexByValue(tmp->connectedto, origin);
+    int dist = distanceFormula(hld, internal);
+    if((dist + internal->weight) < hld->weight) {
+      hld->weight = dist + internal->weight;
+      hld->prev = internal->value;
+    }
+    tmp = tmp->next;
+  }
+  internal->ingraph = 0;
+}
+
+int areAllNotRemoved(Node * origin)
+{
+  Node * itr = origin;
+  while(itr != NULL) {
+    if(itr->ingraph == 1)
+      return 1;
+    itr = itr->next;
+  }
+  return 0;
+}
+
+Node * findLowestNode(Node * origin)
+{
+  if(origin == NULL)
+    return NULL;
+  Node * findfirst = origin;
+  while(findfirst != NULL && findfirst->ingraph == 0)
+    findfirst = findfirst->next;
+  Node * min = findfirst;
+  Node * itr = min->next;
+  while(itr != NULL) {
+    if(itr->weight < min->weight && itr->ingraph == 1)
+      min = itr;
+    itr = itr->next;
+  }
+  return min;
+}
+
+ResultList * reslistConstructor(int value)
+{
+  ResultList * ret = malloc(sizeof(ResultList));
+  ret->value = value;
+  ret->next = NULL;
+  return ret;
+}
+
 int main(int argc, char * * argv)
 {
   //Verify that the correct number of arguments is given
@@ -197,7 +259,39 @@ int main(int argc, char * * argv)
   int startVal = queryArr[i];
   int endVal = queryArr[i+1];
   Node * start = findVertexByValue(startVal, origin);
+  Node * end = findVertexByValue(endVal, origin);
+  start->weight = 0;
+  while(areAllNotRemoved(origin)) {
+    //Set the weight check to find minimum node
+    Node * itrNode = findLowestNode(origin);
+    //Make sure we're not done
+    if(itrNode->value == endVal)
+      break;
+    //Update weights for adjacent nodes
+    updateAdjacentWeights(itrNode, origin);
+  }
+  if(end->weight == PSEUDOINF)
+    FATAL("Final node weight was not updated!");
+  //Produce the result list
+  ResultList * results = reslistConstructor(end->value);
+  Node * before = findVertexByValue(end->prev, origin);
+  while(before->value != startVal) {
+    ResultList * pinonfront = reslistConstructor(before->value);
+    pinonfront->next = results;
+    results = pinonfront;
+    before = findVertexByValue(before->prev, origin);
+  }
+  //Print the final results
+  printf("%ld\n", end->weight);
+  ResultList * printitr = results;
+  while(printitr != NULL) {
+    printf("%d ", printitr->value);
+    printitr = printitr->next;
+  }
+  printf("\n");
 
+  //Free used memory
+  fclose(query);
 
   return EXIT_SUCCESS;
 }
