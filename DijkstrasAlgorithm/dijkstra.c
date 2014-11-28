@@ -43,6 +43,7 @@ typedef struct node_t {
 
 typedef struct reslist_t {
   int value;
+  unsigned long weight;
   struct reslist_t * next;
 } ResultList;
 
@@ -141,6 +142,8 @@ int squareroot(int num)
     return 0;
   if(num == 1)
     return 1;
+  if(num == 4)
+    return 2;
   int i;
   for(i = 1; i < num/2; ++i) {
     if(i * i > num)
@@ -205,10 +208,11 @@ Node * findLowestNode(Node * origin)
   return min;
 }
 
-ResultList * reslistConstructor(int value)
+ResultList * reslistConstructor(int value, unsigned long weight)
 {
   ResultList * ret = malloc(sizeof(ResultList));
   ret->value = value;
+  ret->weight = weight;
   ret->next = NULL;
   return ret;
 }
@@ -246,6 +250,20 @@ void resetGraph(Node * node)
   node->weight = PSEUDOINF;
   node->prev = -1;
   node->ingraph = 1;
+}
+
+unsigned long verifyWeightsAndAssign(ResultList * results, Node * origin)
+{
+  ResultList * itr = results;
+  while(itr->next != NULL) {
+    Node * node1 = findVertexByValue(itr->value, origin);
+    Node * node2 = findVertexByValue(itr->next->value, origin);
+    int dist = distanceFormula(node1, node2);
+    node2->weight = node1->weight + dist;
+    itr = itr->next;
+  }
+  printf("I found the weight: %ld\n", itr->weight);
+  return itr->weight;
 }
 
 int main(int argc, char * * argv)
@@ -294,39 +312,54 @@ int main(int argc, char * * argv)
     //Find the starting point of the query
     int startVal = queryArr[i];
     int endVal = queryArr[i+1];
-    Node * start = findVertexByValue(startVal, origin);
-    Node * end = findVertexByValue(endVal, origin);
-    start->weight = 0;
-    while(areAllNotRemoved(origin)) {
-      //Set the weight check to find minimum node
-      Node * itrNode = findLowestNode(origin);
-      //Make sure we're not done
-      if(itrNode->value == endVal)
-	break;
-      //Update weights for adjacent nodes
-      updateAdjacentWeights(itrNode, origin);
+    //If they're the same, avoid trying to do anything else
+    if(startVal == endVal) {
+      printf("0\n");
+      printf("%d %d\n", startVal, endVal);
     }
-    if(end->weight == PSEUDOINF)
-      FATAL("Final node weight was not updated!");
-    //Produce the result list
-    ResultList * results = reslistConstructor(end->value);
-    Node * before = findVertexByValue(end->prev, origin);
-    while(before->value != startVal) {
-      ResultList * pinonfront = reslistConstructor(before->value);
-      pinonfront->next = results;
-      results = pinonfront;
-      before = findVertexByValue(before->prev, origin);
+    else {
+      Node * start = findVertexByValue(startVal, origin);
+      Node * end = findVertexByValue(endVal, origin);
+      start->weight = 0;
+      while(areAllNotRemoved(origin)) {
+	//Set the weight check to find minimum node
+	Node * itrNode = findLowestNode(origin);
+	//Make sure we're not done
+	if(itrNode->value == endVal)
+	  break;
+	//Update weights for adjacent nodes
+	updateAdjacentWeights(itrNode, origin);
+      }
+      if(end->weight == PSEUDOINF)
+	FATAL("Final node weight was not updated... possibly unconnected?");
+      //Produce the result list
+      ResultList * results = reslistConstructor(end->value, end->weight);
+      Node * before = findVertexByValue(end->prev, origin);
+      while(before->value != startVal) {
+	ResultList * pinonfront = reslistConstructor(before->value, before->weight);
+	pinonfront->next = results;
+	results = pinonfront;
+	before = findVertexByValue(before->prev, origin);
+      }
+      //Make sure the first number in the list is origin
+      if(results->value != startVal) {
+	ResultList * pinonfront2 = reslistConstructor(startVal, start->weight);
+	pinonfront2->next = results;
+	results = pinonfront2;
+      }
+      //Verify weights and assign the end weight
+      //end->weight = verifyWeightsAndAssign(results, origin);
+      //Print the final results
+      printf("%ld\n", end->weight);
+      ResultList * printitr = results;
+      while(printitr != NULL) {
+	printf("%d ", printitr->value);
+	printitr = printitr->next;
+      }
+      printf("\n");
+      reslistDestroy(results);
+      resetGraph(origin);
     }
-    //Print the final results
-    printf("%ld\n", end->weight);
-    ResultList * printitr = results;
-    while(printitr != NULL) {
-      printf("%d ", printitr->value);
-      printitr = printitr->next;
-    }
-    printf("\n");
-    reslistDestroy(results);
-    resetGraph(origin);
   }
 
   //Free used memory
